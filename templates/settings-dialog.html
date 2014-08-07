@@ -9,9 +9,9 @@
             <div class="modal-body">
            <button type="button" class="close" id="closeSettingsCross" data-dismiss="modal" title="{{strings.i18n_close}} {{strings.settings}}" aria-label="{{strings.i18n_close}} {{strings.settings}}"><span aria-hidden="true">&times;</span></button>
 
-           <ul class="nav nav-tabs" role="tablist" aria-controls="tab-main tab-keyboard">
-             <li class="active"><button id="tab-butt-main"  title="{{strings.settings}}" aria-label="{{strings.settings}}" role='tab'  data-toggle="tab" data-target="#tab-main">{{strings.settings}}</button></li>
-             <li><button id="tab-butt-keys"  title="{{strings.i18n_keyboard_shortcuts}}" aria-label="{{strings.i18n_keyboard_shortcuts}}" role='tab' data-toggle="tab" data-target="#tab-keyboard">{{strings.i18n_keyboard_shortcuts}}</button></li>
+           <ul class="nav nav-tabs" role="tablist" aria-owns="tab-butt-main tab-butt-keys">
+             <li role="presentation" class="active" ><button id="tab-butt-main" role="tab" aria-controls="tab-main" title="{{strings.settings}}"  data-toggle="tab" data-target="#tab-main">{{strings.settings}}</button></li>
+             <li role="presentation"><button id="tab-butt-keys" role="tab" aria-controls="tab-keyboard" title="{{strings.i18n_keyboard_shortcuts}}"  data-toggle="tab" data-target="#tab-keyboard">{{strings.i18n_keyboard_shortcuts}}</button></li>
            </ul>
            
            
