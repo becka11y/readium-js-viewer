@@ -122,6 +122,11 @@ Readium){
 
         if (hide){
             $appContainer.removeClass('toc-visible');
+            // clear any focuable tab item
+            var existsFocusable = $('#readium-toc-body a[tabindex="60"]');
+            if (existsFocusable.length > 0){
+              existsFocusable[0].setAttribute("tabindex", "-1");
+            }
 
             setTimeout(function(){ $('#tocButt')[0].focus(); }, 100);
         }
@@ -155,6 +160,57 @@ Readium){
     var hideScaleDisplay = function(){
         $('.zoom-wrapper').hide();
     }
+
+    var findNextTocFocusItem = function($testNode, dir) {
+      var $next = $testNode.find("li >a");
+      var nextFocus = null;
+      if ($next.length>0){
+        return $next[0];
+      }
+      var idx=0;
+      $testNode.nextAll().each(function() {
+        if (this.firstElementChild && this.firstElementChild.tagName == "A") {
+          nextFocus =  this.firstElementChild;
+          return false;
+        } else {
+          $next = $(this).find("li >a");
+          if ($next.length>0) {
+            nextFocus = $next[0];
+            return false;
+          }
+        } 
+      }) // end of sibling each
+        return nextFocus;
+    };
+
+    var findPrevTocFocusItem = function($testNode, first) {
+      var nextFocus = null;
+      var $nextList = $testNode.find("li:last-of-type a:last-of-type");
+        if ($nextList.length>0) {
+          return $nextList[$nextList.length-1];
+        }
+        // if no descendant focus found, check self
+        if ($testNode.length>0 && $testNode[0].firstElementChild != null && $testNode[0].firstElementChild.tagName == "A") {
+          return  ($testNode[0].firstElementChild);
+        }
+        // check previous siblings
+        $testNode.prevAll().each(function() {
+          if ($(this).length > 0){
+            // find last li > a descendant 
+             $nextList = $(this).find("li:last-of-type a:last-of-type");
+            if ($nextList.length>0){
+              nextFocus = $nextList[$nextList.length-1];
+              return false;
+            }
+            // if no descendant, check self
+            if (this.firstElementChild && this.firstElementChild.tagName == "A") {
+              nextFocus =  this.firstElementChild;
+              return false;
+            }
+          }
+      }) // end of prev sibling each
+        return nextFocus;
+    };
 
     var loadToc = function(dom){
 
@@ -202,6 +258,12 @@ Readium){
                 // automatically results in origin/domain restrictions (thereby preventing access to window.top / window.parent).
                 // Also note that "script" elements are discarded automatically by jQuery.
                 $('iframe', $toc).remove();
+                
+                // remove default focus from a elements in TOC
+                var $items = $toc.find('li >a');
+                $items.each(function(){
+                  $(this).attr("tabindex", "-1");
+                });
 
                 $('#readium-toc-body').append($toc);
 
@@ -373,7 +435,102 @@ Readium){
             */
             return false;
         })
-    }
+//        var KEY_ENTER = 0x0D;
+//        var KEY_SPACE = 0x20;
+        var KEY_END = 0x23;
+        var KEY_HOME = 0x24;
+//        var KEY_LEFT = 0x25;
+        var KEY_UP = 0x26;
+//        var KEY_RIGHT = 0x27;
+        var KEY_DOWN = 0x28;
+        
+        $('#readium-toc-body').keyup( function(event){
+            var next = null;
+            var blurNode = event.target;
+            switch (event.which) {
+              case KEY_HOME:
+                  //find first ol >li >a
+                  next = $('#readium-toc-body >ol:first-of-type >li:first-of-type > a:first-of-type')[0];
+              break;
+
+              case KEY_END:
+              // find last a within toc
+                next = $('#readium-toc-body a').last()[0];
+              break;
+              
+              case KEY_DOWN:
+                if (blurNode.tagName == "BUTTON") {
+                    var existsFocusable = $('#readium-toc-body a[tabindex="60"]');
+                    if (existsFocusable.length > 0) {
+                      next = existsFocusable[0];
+                    }
+                } if (next == null) {
+                  var $testNode = $(event.target.parentNode); // should be li 
+                  next = findNextTocFocusItem($testNode, 1);
+                  if (next == null) {
+                    var $parentList = $testNode.parentsUntil("#readium-toc-body");
+                    var stopNode = $parentList[$parentList.length-1]; 
+                    var $parentNode = $testNode.parent();
+                    while (!($parentNode[0] === stopNode)) {
+                      $testNode = $parentNode.next(); // get parent's sibling
+                      if ($testNode.length > 0) { // if there is a sibling
+                          // check that first child is NOT focusable
+                          if ($testNode[0].firstElementChild && $testNode[0].firstElementChild.tagName == "A"){ 
+                            next = $testNode[0].firstElementChild;
+                          } else { // if no focusable firstChild, check descendants 
+                            next =  findNextTocFocusItem($testNode, 1);
+                          }
+                      }
+                      if (next != null){ // if found - break from loop
+                        break;
+                      } else { // if not found, go up the parent hierarchy again
+                        $parentNode = $parentNode.parent();
+                      }
+                    } /* end while */
+                  }
+                }
+              break;
+              
+              case KEY_UP:
+                var $testNode = $(event.target.parentNode);
+                var $parentList = $testNode.parentsUntil("#readium-toc-body");
+                var stopNode = $parentList[$parentList.length-1];
+                if ($testNode.prev().length > 0) {
+                  next = findPrevTocFocusItem($testNode.prev(), -1);
+                }
+                if (next == null) {
+                  var $parentNode = $testNode.parent();
+                  while (!($parentNode[0] === stopNode)) {
+                    $testNode = $parentNode.prev(); // get parent's sibling
+                    if ($testNode.length > 0) {
+                      if($testNode[0].tagName == "A") { // if the sibling is an <a> it is the next focus node
+                        next = $testNode[0];
+                      } else{
+                        next =  findPrevTocFocusItem($testNode, -1);
+                      }
+                    }
+                    if (next != null){ // if found - break from loop
+                      break;
+                    } else { // if not found, go up the parent hierarchy again
+                      $parentNode = $parentNode.parent();
+                    }
+                  } /* end while */
+                }
+              break;
+              
+              default:
+                return true;
+            }
+            if (next) {
+              next.setAttribute("tabindex", "60");
+              if (blurNode.tagName != "BUTTON"){
+                blurNode.setAttribute("tabindex", "-1");
+              }
+              setTimeout(next.focus(), 5);
+            }
+          return true;
+      }); // end of onkeyup
+    } // end of loadToc
 
     var toggleFullScreen = function(){
 
