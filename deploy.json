@@ -11,7 +11,8 @@
 	},
 	"repository": {},
 	"engines": {
-		"node": "4.2.x"
+		"node": "4.2.x",
+		"npm": ">2.10"
 	} 
 }
 
