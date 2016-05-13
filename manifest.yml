@@ -1,8 +1,6 @@
 applications:
-- host: readium
-  name: Readium
+- name: Readium
   command: node app.js
-  path: .
   domain: mybluemix.net
   instances: 1
   
